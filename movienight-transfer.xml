@@ -5,7 +5,7 @@
        immuable sera épinglé ici à la publication de l'image dans le registre
        (l'image ghcr.io/gorillaink/movienight-transfer n'est PAS encore
        publiée : aucun digest ne peut être honnêtement écrit avant). -->
-  <Repository>ghcr.io/gorillaink/movienight-transfer:1.0.0</Repository>
+  <Repository>ghcr.io/gorillaink/movienight-transfer:1.0.1</Repository>
   <Registry>https://ghcr.io/gorillaink/movienight-transfer</Registry>
   <Network>movienight-net</Network>
   <Privileged>false</Privileged>
