@@ -1,0 +1,62 @@
+<Container>
+  <TemplateURL>https://raw.githubusercontent.com/gorillaink/movienight-unraid-templates/main/movienight.xml</TemplateURL>
+  <Name>movienight</Name>
+  <!-- BL-001 : le tag est une VERSION SÉMANTIQUE, jamais `latest`. Le digest
+       immuable sera épinglé ici à la publication de l'image dans le registre
+       (l'image ghcr.io/gorillaink/movienight n'est PAS encore publiée : aucun
+       digest ne peut être honnêtement écrit avant). -->
+  <Repository>ghcr.io/gorillaink/movienight:1.0.0</Repository>
+  <Registry>https://ghcr.io/gorillaink/movienight</Registry>
+  <Network>movienight-net</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/movienight/movienight/issues</Support>
+  <Project>https://github.com/movienight/movienight</Project>
+  <Overview>MovieNight is the assistant for watching movies and TV series, with library preparation and data budget built-in.</Overview>
+  <Category>Media:</Category>
+  <WebUI>http://[IP]:[PORT:3000]</WebUI>
+  <Icon>https://i.imgur.com/bKepNrG.png</Icon>
+
+  <Config Name="Web UI" Target="3000" Default="3000" Mode="tcp" Description="MovieNight web interface port" Type="Port" Display="always" Required="false" Mask="false"/>
+
+  <Config Name="AppData Path" Target="/config" Default="" Mode="rw" Description="Path to application data" Type="Path" Display="always" Required="true" Mask="false"/>
+
+  <Config Name="Quarantine Path" Target="/data/quarantine" Default="" Mode="rw" Description="Path for quarantined files" Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="Staging Path" Target="/data/staging" Default="" Mode="rw" Description="Path for staging files before import" Type="Path" Display="always" Required="true" Mask="false"/>
+  <!-- BL-001 : la bibliothèque n'est montée QUE dans l'application. Le moteur
+       de transfert ne la voit pas, et Plex n'y accède que par son propre
+       partage. -->
+  <Config Name="Library Path" Target="/data/library" Default="" Mode="rw" Description="Path to the media library (movies and series). Mounted in this container only." Type="Path" Display="always" Required="true" Mask="false"/>
+
+  <!-- BL-001 : aucun mot de passe n'est écrit en clair dans le modèle. La
+       chaîne de connexion est OBLIGATOIRE, masquée, et doit ressemble à
+       postgresql://movienight:MON_MOT_DE_PASSE@movienight-db:5432/movienight
+       Elle doit correspondre au mot de passe saisi dans « movienight-db ». -->
+  <Config Name="Database URL" Target="DATABASE_URL" Default="" Mode="env" Description="PostgreSQL connection string, REQUIRED. Format: postgresql://USER:PASSWORD@movienight-db:5432/DBNAME. It must match the password set in the movienight-db template." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <!-- BL-002 : signe les cookies de session. Générez-le avec : openssl rand -hex 32 -->
+  <Config Name="Session Secret" Target="SESSION_SECRET" Default="" Mode="env" Description="Session cookie signing key, REQUIRED. Generate with: openssl rand -hex 32" Type="Variable" Display="always" Required="true" Mask="true"/>
+  <!-- BL-000 : le secret partagé qui authentifie chaque appel au moteur de
+       transfert. Il doit être IDENTIQUE à celui du modèle movienight-transfer.
+       Générez-le avec : openssl rand -hex 32 -->
+  <Config Name="Engine Secret" Target="MOVIENIGHT_ENGINE_SECRET" Default="" Mode="env" Description="Shared secret authenticating every call to the transfer engine, REQUIRED. Generate with: openssl rand -hex 32. It must match the value in the movienight-transfer template." Type="Variable" Display="always" Required="true" Mask="true"/>
+
+  <Config Name="Transfer API URL" Target="TRANSFER_API_URL" Default="http://movienight-transfer:8080" Mode="env" Description="Transfer engine API endpoint" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Invitation TTL (hours)" Target="INVITATION_TTL_HOURS" Default="48" Mode="env" Description="BL-003: lifetime of a household invitation, in hours (1-720). Default 48." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Trust proxy" Target="TRUST_PROXY" Default="" Mode="env" Description="BL-003: set to 1 only when a reverse proxy sits in front of MovieNight, so x-forwarded-host is honoured. Leave empty otherwise." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <!-- BL-002 : un cookie `Secure` est abandonné par le navigateur sur un LAN
+       en HTTP simple, ce qui déconnecterait tout le monde. Laisser à false
+       sauf si l'application est réellement servie en HTTPS. -->
+  <Config Name="Secure cookie" Target="COOKIE_SECURE" Default="false" Mode="env" Description="Set to true only when the application is really served over HTTPS. The documented LAN-over-HTTP deployment needs false." Type="Variable" Display="always" Required="false" Mask="false"/>
+
+  <!-- BL-001 : le conteneur tourne en non-root, avec le UID/GID de l'hôte. -->
+  <Config Name="PUID" Target="PUID" Default="1000" Mode="env" Description="UID of the container user. Match the owner of the appdata paths." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="PGID" Target="PGID" Default="1000" Mode="env" Description="GID of the container user. Match the group of the appdata paths." Type="Variable" Display="always" Required="false" Mask="false"/>
+
+  <ExtraParams>--user %PUID%:%PGID%</ExtraParams>
+
+  <!-- BL-001 FR7 : la sauvegarde AVANT migration. Elle est prise dans le
+       répertoire de configuration (déjà persistant), et son échec
+       INTERDIT la migration : sans sauvegarde, une migration ratée n'est
+       pas réversible. Le chemin par défaut est /config/backups. -->
+  <Config Name="Backup Directory" Target="MOVIENIGHT_BACKUP_DIR" Default="/config/backups" Mode="env" Description="Where the pre-migration backup is written. A failed backup STOPS the migration. Default: /config/backups" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Backup Retention" Target="MOVIENIGHT_BACKUP_RETENTION" Default="5" Mode="env" Description="How many pre-migration backups are kept. The oldest are pruned. Default: 5" Type="Variable" Display="always" Required="false" Mask="false"/>
+</Container>

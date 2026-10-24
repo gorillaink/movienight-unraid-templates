@@ -1,0 +1,26 @@
+<Container>
+  <TemplateURL>https://raw.githubusercontent.com/gorillaink/movienight-unraid-templates/main/movienight-db.xml</TemplateURL>
+  <Name>movienight-db</Name>
+  <!-- BL-001 : version MAJEURE épinglée, jamais `latest`. Le digest immuable
+       sera ajouté à la publication. -->
+  <Repository>postgres:17</Repository>
+  <Registry>https://hub.docker.com/_/postgres</Registry>
+  <Network>movienight-net</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/movienight/movienight/issues</Support>
+  <Project>https://github.com/movienight/movienight</Project>
+  <Overview>PostgreSQL database for MovieNight application.</Overview>
+  <Category>Database:</Category>
+  <Icon>https://i.imgur.com/bKepNrG.png</Icon>
+
+  <Config Name="Database Data Path" Target="/var/lib/postgresql/data" Default="" Mode="rw" Description="Path to PostgreSQL database files" Type="Path" Display="always" Required="true" Mask="false"/>
+  <Config Name="PostgreSQL User" Target="POSTGRES_USER" Default="movienight" Mode="env" Description="PostgreSQL user name" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <!-- BL-001 : aucun mot de passe par défaut. Un mot de passe écrit dans le
+       modèle est un mot de passe PUBLIÉ : il est dans le dépôt, dans les
+       captures d'écran, dans les sauvegardes du modèle. Le champ est donc
+       OBLIGATOIRE et masqué, et il doit correspondre au « Database URL » du
+       modèle movienight.
+       Générez-le avec : openssl rand -hex 24 -->
+  <Config Name="PostgreSQL Password" Target="POSTGRES_PASSWORD" Default="" Mode="env" Description="PostgreSQL password, REQUIRED. Generate with: openssl rand -hex 24. It must match the password embedded in the movienight template's Database URL." Type="Variable" Display="always" Required="true" Mask="true"/>
+  <Config Name="Database Name" Target="POSTGRES_DB" Default="movienight" Mode="env" Description="Database name" Type="Variable" Display="always" Required="false" Mask="false"/>
+</Container>

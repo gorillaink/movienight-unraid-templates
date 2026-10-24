@@ -1,0 +1,50 @@
+<Container>
+  <TemplateURL>https://raw.githubusercontent.com/gorillaink/movienight-unraid-templates/main/movienight-transfer.xml</TemplateURL>
+  <Name>movienight-transfer</Name>
+  <!-- BL-001 : le tag est une VERSION SÉMANTIQUE, jamais `latest`. Le digest
+       immuable sera épinglé ici à la publication de l'image dans le registre
+       (l'image ghcr.io/gorillaink/movienight-transfer n'est PAS encore
+       publiée : aucun digest ne peut être honnêtement écrit avant). -->
+  <Repository>ghcr.io/gorillaink/movienight-transfer:1.0.0</Repository>
+  <Registry>https://ghcr.io/gorillaink/movienight-transfer</Registry>
+  <Network>movienight-net</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/movienight/movienight/issues</Support>
+  <Project>https://github.com/movienight/movienight</Project>
+  <Overview>MovieNight Transfer Engine for downloading and managing torrents.</Overview>
+  <Category>Media:</Category>
+  <Icon>https://i.imgur.com/bKepNrG.png</Icon>
+
+  <Config Name="State Path" Target="/state" Default="" Mode="rw" Description="Path to transfer engine state files (resume data)" Type="Path" Display="always" Required="true" Mask="false"/>
+  <!-- BL-001 : la quarantaine est le SEUL endroit où le moteur écrit. Ni le
+       staging ni la bibliothèque ne sont montés : le moteur ne peut pas y
+       accéder, il n'y a donc pas d'exfiltration possible. -->
+  <Config Name="Quarantine Path" Target="/data/quarantine" Default="" Mode="rw" Description="Path for quarantined files. The ONLY path the engine writes to." Type="Path" Display="always" Required="true" Mask="false"/>
+
+  <!-- BL-000 : le secret partagé qui authentifie chaque appel au moteur.
+       Il doit être IDENTIQUE à celui du modèle movienight.
+       Générez-le avec : openssl rand -hex 32 -->
+  <Config Name="Engine Secret" Target="MOVIENIGHT_ENGINE_SECRET" Default="" Mode="env" Description="Shared secret authenticating every call to the transfer engine, REQUIRED. Generate with: openssl rand -hex 32. It must match the value in the movienight template." Type="Variable" Display="always" Required="true" Mask="true"/>
+
+  <Config Name="Transfer Port" Target="TRANSFER_PORT" Default="8080" Mode="env" Description="Port of the transfer engine API" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Quarantine Path (env)" Target="TRANSFER_QUARANTINE_PATH" Default="/data/quarantine" Mode="env" Description="Internal path of the quarantine inside the container" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="State File" Target="TRANSFER_STATE_PATH" Default="/state/transfer_state.json" Mode="env" Description="Internal path of the resume state file inside the container" Type="Variable" Display="always" Required="false" Mask="false"/>
+
+  <!-- BL-000 : l'enveloppe d'exploration des métadonnées. Elle est BORNÉE
+       par le moteur lui-même (16 Kio–16 Mio, 1–300 s) : ces valeurs ne
+       peuvent que RESSERRER les bornes, jamais les élargir. -->
+  <Config Name="Exploration Max Bytes" Target="TRANSFER_EXPLORATION_MAX_BYTES" Default="2097152" Mode="env" Description="Byte budget of a metadata exploration (2 Mio by default)" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="Exploration Max Seconds" Target="TRANSFER_EXPLORATION_MAX_SECONDS" Default="30" Mode="env" Description="Time budget of a metadata exploration, in seconds" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <!-- Le chien de garde expire les baux LOKAUXEMENT : un worker mort
+       n'arrête donc pas le trafic. -->
+  <Config Name="Watchdog Interval" Target="TRANSFER_WATCHDOG_INTERVAL" Default="5" Mode="env" Description="Seconds between two lease expiry checks" Type="Variable" Display="always" Required="false" Mask="false"/>
+  <!-- Le point de contrôle écrit l'état TOUT SEUL : un worker qui meurt
+       n'emporte pas les données de reprise. -->
+  <Config Name="Checkpoint Interval" Target="TRANSFER_CHECKPOINT_INTERVAL" Default="60" Mode="env" Description="Seconds between two durable state checkpoints" Type="Variable" Display="always" Required="false" Mask="false"/>
+
+  <!-- BL-001 : le conteneur tourne en non-root, avec l'UID/GID de l'hôte. -->
+  <Config Name="PUID" Target="PUID" Default="1000" Mode="env" Description="UID of the container user. Match the owner of the state and quarantine paths." Type="Variable" Display="always" Required="false" Mask="false"/>
+  <Config Name="PGID" Target="PGID" Default="1000" Mode="env" Description="GID of the container user. Match the group of the state and quarantine paths." Type="Variable" Display="always" Required="false" Mask="false"/>
+
+  <ExtraParams>--user %PUID%:%PGID%</ExtraParams>
+</Container>
